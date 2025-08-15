@@ -1,10 +1,11 @@
 
 use core::starknet::ContractAddress;
+use core::byte_array::ByteArray;
 
-#[derive(Drop, Serde, Copy, starknet::Store)]
+#[derive(Drop, Serde, starknet::Store)]
 struct Agent {
     address: ContractAddress,
-    endpoint: felt252,  // URL as felt
+    endpoint: ByteArray, 
     is_active: bool,
     total_earned: u256
 }
@@ -21,7 +22,7 @@ struct Payment {
 // Define interface
 #[starknet::interface]
 pub trait INSAgent<TContractState> {
-    fn register_agent(ref self: TContractState, endpoint: felt252);
+    fn register_agent(ref self: TContractState, endpoint: ByteArray);
     fn record_payment(ref self: TContractState, to: ContractAddress, amount: u256, lease_id: felt252);
     fn get_agent(self: @TContractState, address: ContractAddress) -> Agent;
     // fn get_agents(self: @TContractState) -> Array<Agent>;
@@ -32,6 +33,7 @@ pub trait INSAgent<TContractState> {
 mod NSAgent {
     use core::starknet::{ContractAddress, get_caller_address, get_block_timestamp};
     use core::num::traits::Zero;
+    use core::byte_array::ByteArray;
     use starknet::storage::{ Map, StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess, StoragePointerWriteAccess};
     use super::Agent;
     use super::Payment;
@@ -46,10 +48,9 @@ mod NSAgent {
     // fntions
     #[abi(embed_v0)]
     impl NSAgentImpl of super::INSAgent<ContractState> {
-        fn register_agent(ref self: ContractState, endpoint: felt252) {
+        fn register_agent(ref self: ContractState, endpoint: ByteArray) {
             let caller = get_caller_address();
             assert(caller.is_non_zero(), 'Caller address cannot be zero');
-            // Simple registration - no staking for now
             // TODO: implement staking
             self.agents.write(caller, Agent{
                 address: caller,
